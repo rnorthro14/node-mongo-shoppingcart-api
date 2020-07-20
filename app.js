@@ -2,9 +2,9 @@ const path = require('path');
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const errorController = require('./controllers/error');
-const mongoConnect = require('./util/database').mongoConnect;
 const User = require('./models/user');
 
 const app = express();
@@ -19,9 +19,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  User.fetchUserById('5f109fb57cc8a45f39be82ee')
+  User.findById('5f147c6b5f73535c73d1a3ff')
   .then(user => {
-    req.user = new User(user.name, user.email, user.cart, user._id);
+    req.user = user;
     next();
   })
   .catch(err => console.log(err));
@@ -32,7 +32,26 @@ app.use(shopRoutes);
 
 app.use(errorController.get404);
 
-mongoConnect(() => {
-  app.listen(3000)
+mongoose
+.connect('mongodb+srv://robert2:GUpNkycrfbryF8tj@cluster0-dsc7f.mongodb.net/shoppingcart?retryWrites=true',
+{ useNewUrlParser: true, useUnifiedTopology: true })
+.then(result => {
+  User.findOne().then(user => {
+    if (!user) {
+      const user = new User({
+        name: 'Sanders',
+        email: 'goodboy@test.com',
+        cart: {
+          items: []
+        }
+      });
+      user.save();
+    }
+  });
+  console.log('Connect to port 3000 through mongoose');
+  app.listen(3000);
 })
+.catch(err => {
+  console.log('Problem connecting to the server', err)
+});
 
